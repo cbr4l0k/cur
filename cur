@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# Description: Manage ~/current symlink to track working directory
+# Usage: cur [show|go|force|unset]
+#
+# Tip: Add this to your .bashrc/.zshrc for instant cd without subshell:
+#   c() { [ -L "$HOME/current" ] && cd "$(readlink -f "$HOME/current")" || echo "No ~/current symlink."; }
+
+set -euo pipefail
+
+LINK="$HOME/current"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  cur             Set ~/current -> physical $PWD
+  cur show        Show where ~/current points
+  cur go          Start a subshell in ~/current
+  cur force       Replace ~/current even if it is a real directory
+  cur unset       Remove the ~/current symlink
+EOF
+}
+
+phys_pwd() { pwd -P; }  # resolve all symlinks in $PWD
+
+cmd="${1:-}"
+
+case "$cmd" in
+  "" )
+    target="$(phys_pwd)"
+    # Refuse to overwrite a non-symlink unless forced
+    if [ -e "$LINK" ] && [ ! -L "$LINK" ]; then
+      echo "Refusing: $LINK exists and is not a symlink. Use 'cur force' to replace." >&2
+      exit 1
+    fi
+    ln -sfn -- "$target" "$LINK"
+    printf "🔗 set %s → %s\n" "$LINK" "$target"
+    ;;
+
+  show )
+    if [ -L "$LINK" ]; then
+      if command -v realpath >/dev/null 2>&1; then
+        resolved="$(realpath "$LINK" 2>/dev/null)" || resolved=""
+      else
+        resolved="$(readlink "$LINK")"
+      fi
+
+      raw_target="$(readlink "$LINK")"
+
+      if [ -z "$resolved" ] || [ ! -e "$resolved" ]; then
+        echo "$raw_target (broken — target no longer exists)" >&2
+        exit 1
+      else
+        echo "$resolved"
+      fi
+    else
+      echo "No ~/current symlink yet."
+      exit 1
+    fi
+    ;;
+
+  go )
+    if [ -L "$LINK" ]; then
+      # Check if target still exists
+      if ! target="$(realpath "$LINK" 2>/dev/null)" || [ ! -d "$target" ]; then
+        echo "Target no longer exists: $(readlink "$LINK")" >&2
+        exit 1
+      fi
+      cd -P -- "$LINK" || exit 1
+      shell="${SHELL:-/bin/bash}"
+      exec "$shell" -l
+    else
+      echo "No ~/current symlink yet. Run 'cur' in a project first."
+      exit 1
+    fi
+    ;;
+
+  force )
+    target="$(phys_pwd)"
+    rm -rf -- "$LINK"
+    ln -sfn -- "$target" "$LINK"
+    printf "🔗 set %s → %s\n" "$LINK" "$target"
+    ;;
+
+  unset|clear )
+    if [ -L "$LINK" ]; then
+      rm -- "$LINK"
+      echo "Removed ~/current"
+    elif [ -e "$LINK" ]; then
+      echo "$LINK exists but is not a symlink. Remove manually if intended." >&2
+      exit 1
+    else
+      echo "No symlink to remove."
+    fi
+    ;;
+
+  -h|--help|help )
+    usage
+    ;;
+
+  * )
+    echo "Unknown option: $cmd" >&2
+    usage
+    exit 2
+    ;;
+esac
