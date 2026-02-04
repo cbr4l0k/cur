@@ -10,6 +10,8 @@ That back-and-forth breaks the flow. `cur` fixes it by giving you a single, stab
 
 ## Install
 
+Clone or download the repo, and then inside:
+
 ```sh
 make install              # installs to /usr/local/bin (needs sudo)
 sudo make install         # same, explicit
