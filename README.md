@@ -13,9 +13,9 @@ That back-and-forth breaks the flow. `cur` fixes it by giving you a single, stab
 Clone or download the repo, and then inside:
 
 ```sh
-make install              # installs to /usr/local/bin (needs sudo)
-sudo make install         # same, explicit
-make install PREFIX=~     # installs to ~/bin (no sudo)
+make install                    # installs to /usr/local/bin (needs sudo)
+sudo make install               # same, explicit
+make install PREFIX=~/.local    # installs to ~/.local/bin (no sudo)
 ```
 
 Or copy it manually:
@@ -60,8 +60,8 @@ cur help        Print usage
 ## Uninstall
 
 ```sh
-make uninstall              # removes from /usr/local/bin
-make uninstall PREFIX=~     # removes from ~/bin
+make uninstall                     # removes from /usr/local/bin
+make uninstall PREFIX=~/.local     # removes from ~/.local/bin
 ```
 
 ## License
